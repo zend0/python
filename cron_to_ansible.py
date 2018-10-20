@@ -2,37 +2,72 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import re
 
 
-def job_format(x):
-    return "{0}".format(x) if x.isdigit() else "'{0}'".format(x)
+class CronConverter:
 
-def gen_ansible_task(mi, h, d, mo, w, j):
-    task = ''
-    if mi != '*':
-        task +=  ' '*4 + 'minute: {0}\n'.format(job_format(mi))
-    if h != '*':
-        task +=  ' '*4 + 'hour: {0}\n'.format(job_format(h))
-    if d != '*':
-        task +=  ' '*4 + 'day: {0}\n'.format(job_format(d))
-    if mo != '*':
-        task +=  ' '*4 + 'month: {0}\n'.format(job_format(mo))
-    if w != '*':
-        task +=  ' '*4 + 'weekday: {0}\n'.format(job_format(w))
-    task += ' '*4 + 'job: {0}'.format(j)
-    return task
+    def __init__(self):
+        self.envs = dict()
+        self.tasks = list()
+        self.taskid = 0
+
+    def job_format(self, x):
+        return "{0}".format(x) if x.isdigit() else "'{0}'".format(x)
+
+    def add_env(self, k, v):
+        self.envs[k] = "'{0}'".format(v) if v.startswith('"') and v.endswith('"') else v
+
+    def list_env(self):
+        if len(self.envs) > 0:
+            print("\x1b[33mcron_vars:\x1b[0m")
+            for k, v in self.envs.items():
+                print(' '*2 + '- name: {0}\n'.format(k) + ' '*4 + 'value: {0}'.format(v))
+
+    def add_task(self, mi, h, d, mo, w, j):
+        task = ['name: {0} #{1}'.format(sys.argv[1], self.taskid)]
+        if mi != '*':
+            task.append('minute: {0}'.format(self.job_format(mi)))
+        if h != '*':
+            task.append('hour: {0}'.format(self.job_format(h)))
+        if d != '*':
+            task.append('day: {0}'.format(self.job_format(d)))
+        if mo != '*':
+            task.append('month: {0}'.format(self.job_format(mo)))
+        if w != '*':
+            task.append('weekday: {0}'.format(self.job_format(w)))
+        task.append('job: {0}'.format(j))
+
+        self.tasks.append(task)
+        self.taskid += 1
+
+    def list_task(self):
+        if len(self.tasks) > 0:
+            print("\x1b[33mcron_jobs_for_host:\x1b[0m")
+            for t in self.tasks:
+                for v in range(len(t)):
+                    if v == 0:
+                        print(' '*2 + '- {0}'.format(t[v]))
+                    else:
+                        print(' ' * 4 + '{0}'.format(t[v]))
 
 
 if __name__ == "__main__":
+    converter = CronConverter()
     try:
         with open(sys.argv[1]) as cron:
-            count = 0
             for line in cron:
                 line = line.strip()
                 if len(line) > 0 and not line.startswith('#'):
-                    minute, hour, day, month, weekday = line.split()[:5]
-                    job = ' '.join(line.split()[5:])
-                    print('  - name: {0} #{1}\n'.format(sys.argv[1], count) + gen_ansible_task(minute, hour, day, month, weekday, job))
-                    count += 1
+                    if re.match(r'^[A-Z]+[ ]?=[ ]?.*', line) is not None:
+                        result = re.match(r'(^[A-Z]+)[ ]?=[ ]?(.*)', line)
+                        converter.add_env(result.group(1), result.group(2))
+                    else:
+                        minute, hour, day, month, weekday = line.split()[:5]
+                        job = ' '.join(line.split()[5:])
+                        converter.add_task(minute, hour, day, month, weekday, job)
     except Exception as e:
-        sys.exit("\033[91mERROR: %s\033[0m" % (str(e)))
+        sys.exit("\x1b[91mERROR: {0}\x1b[0m".format(e))
+
+    converter.list_env()
+    converter.list_task()
