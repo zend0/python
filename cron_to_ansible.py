@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+This script converts the existing crontab file into the yaml file for ansible
+run: cron_to_ansible.py <your_crontab_file>
+"""
+
 import sys
 import re
 
