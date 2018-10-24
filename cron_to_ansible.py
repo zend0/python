@@ -30,7 +30,7 @@ class CronConverter:
                 print(' '*2 + '- name: {0}\n'.format(k) + ' '*4 + 'value: {0}'.format(v))
 
     def task_add(self, mi, h, d, mo, w, j):
-        task = ['name: {0} #{1}'.format(sys.argv[1], self.taskid)]
+        task = ['name: {0} id-{1}'.format(sys.argv[1], self.taskid)]
         if mi != '*':
             task.append('minute: {0}'.format(self.job_format(mi)))
         if h != '*':
