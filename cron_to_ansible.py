@@ -25,7 +25,7 @@ class CronConverter:
 
     def env_list(self):
         if len(self.envs) > 0:
-            print("\x1b[33mcron_vars:\x1b[0m")
+            print("cron_vars:")
             for k, v in self.envs.items():
                 print(' '*2 + '- name: {0}\n'.format(k) + ' '*4 + 'value: {0}'.format(v))
 
@@ -48,7 +48,7 @@ class CronConverter:
 
     def task_list(self):
         if len(self.tasks) > 0:
-            print("\x1b[33mcron_jobs_for_host:\x1b[0m")
+            print("cron_jobs_for_host:")
             for t in self.tasks:
                 for v in range(len(t)):
                     if v == 0:
